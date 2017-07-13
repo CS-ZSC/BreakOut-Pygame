@@ -1,10 +1,21 @@
-
 import pygame, sys
 from pygame.locals import *
 
 SQUARE, CIRCLE = "square", "circle"
 score = 0
 FPS, timer = 60, 0
+textpos = None
+
+def text_render(string, size, color, x, y):
+    
+    global textpos
+    if(textpos != None): screen.fill(bg, textpos)
+    
+    font = pygame.font.Font(None, size)
+    text = font.render(string, True, color)
+    textpos = text.get_rect(center=(x, y))
+    
+    screen.blit(text, textpos)
 
 # GameObject class for all objects in game
 class GameObject(pygame.sprite.Sprite):
@@ -184,6 +195,10 @@ def clear_callback(surf, rect):
     surf.fill(bg, rect)
 
 game_over = False
+start = True
+
+text_render("Start press any button", 34, (100, 50, 255), screen_size[0] // 2, screen_size[1] // 2)
+pygame.display.update()
 
 # Game Loop
 while 1:
@@ -194,8 +209,10 @@ while 1:
     for event in pygame.event.get():
         if event.type == QUIT:
             sys.exit()
+        if event.type == KEYDOWN:
+            start = False
 
-    if(not game_over):
+    if(not game_over and not start):
 
         # Checking key events
         keys = pygame.key.get_pressed()
@@ -219,28 +236,16 @@ while 1:
 
         # Checking if the game is over
         if ball.dead:
-            screen.fill(bg, textpos)
-            font = pygame.font.Font(None, 36)
-            text = font.render("You Are Dead", True, (100, 50, 255))
-            textpos = text.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2 ))
+            text_render("You Lose", 36, (100, 50, 255), screen_size[0] // 2, screen_size[1] // 2)
             game_over = True
             
 
         elif not bool(sprites):
-            screen.fill(bg, textpos)
-            font = pygame.font.Font(None, 36)
-            text = font.render("You Win", True, (100, 50, 255))
-            textpos = text.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2 ))
+            text_render("You Win", 36, (100, 50, 255), screen_size[0] // 2, screen_size[1] // 2)
             game_over = True
             
         else:
-            text = font.render("score = " + str(score), True, (0, 0, 255))
-            textpos = text.get_rect(center=(70, screen_size[1] - 10))
-
-
-        # Showing the text
-        screen.fill(bg, textpos)
-        screen.blit(text, textpos)
+            text_render("score = " + str(score), 30, (0, 0, 255), 70, screen_size[1] // - 10)
 
         # Updating the screen (new frame)
         pygame.display.update()
