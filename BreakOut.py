@@ -1,8 +1,10 @@
+
 import pygame, sys
 from pygame.locals import *
 
 SQUARE, CIRCLE = "square", "circle"
 score = 0
+FPS, timer = 60, 0
 
 # GameObject class for all objects in game
 class GameObject(pygame.sprite.Sprite):
@@ -33,6 +35,10 @@ class GameObject(pygame.sprite.Sprite):
             self.rect.y = top
 
         if self.shape == CIRCLE:
+            self.image = pygame.image.load("img/glassball.png")
+            self.image = pygame.transform.scale(self.image, (width, height))
+            self.rect = self.image.get_rect()
+            
             self.top = screen_size[1] - 50 - 20
             self.left = screen_size[0] // 2
             self.width = width
@@ -40,8 +46,8 @@ class GameObject(pygame.sprite.Sprite):
             self.rect.x = self.left
             self.rect.y = self.top
             
-            self.speed_x = 10
-            self.speed_y = 10
+            self.speed_x = 6
+            self.speed_y = 6
 
     # Deprecated now drawing with images
     def draw(self, color):
@@ -77,35 +83,41 @@ class GameObject(pygame.sprite.Sprite):
                 if self.collision(sprites) or self.collision(player):
                     self.speed_y = -self.speed_y
                     
+                    
                 self.rect.left += self.speed_x
                 if self.collision(sprites) or self.collision(player) :
                     self.speed_x = -self.speed_x
-                
+
 
             #self.rect = pygame.Rect(self.left, self.top, self.width, self.height)
             #self.draw(self.color)
 
     # Detecting Collisions 
-    def collision(self, sprites):
+    def collision(self, ss):
 
         # With walls
-        if isinstance(sprites, pygame.sprite.RenderUpdates):
-            for sp in sprites:
+        if isinstance(ss, pygame.sprite.RenderUpdates):
+            for sp in ss:
                 if self.is_collided_with(sp.rect):
                     global score
                     score += 10
-                    sprites.remove(sp)
+                    ss.remove(sp)
                     return True
                 
             return False
 
         # With player
         else:
-            if self.is_collided_with(sprites.rect):
+            global FPS, timer
+            
+            if timer: timer -= 1
+                
+            elif self.is_collided_with(ss.rect):
+                timer = 1 * FPS
                 return True
             
             return False
-        
+       
     # Collision between two rects
     def is_collided_with(self, sprite):
         return self.rect.colliderect(sprite)
@@ -137,7 +149,7 @@ bg = (0, 0, 0)
 screen.fill(bg)
 
 # Frames Per Second limit
-FPS = 30
+
 fpsClock = pygame.time.Clock()
 
 
@@ -152,7 +164,7 @@ for i in range(4):
 
 # Making player GameObject        
 player = GameObject(screen_size[0] // 2 - (w + 30) // 2, screen_size[1] - 50, w + 30,\
-                  h + 5, SQUARE, Color(0, 66, 32, 200), "player")
+                  h, SQUARE, Color(0, 66, 32, 200), "player")
 
 all_sprites.add(player)
 
@@ -171,9 +183,11 @@ font = pygame.font.Font(None, 26)
 def clear_callback(surf, rect):
     surf.fill(bg, rect)
 
+game_over = False
+
 # Game Loop
 while 1:
-
+    
     fpsClock.tick(FPS)
 
     # Checking events
@@ -181,40 +195,52 @@ while 1:
         if event.type == QUIT:
             sys.exit()
 
-    # Checking key events
-    keys = pygame.key.get_pressed()
+    if(not game_over):
+
+        # Checking key events
+        keys = pygame.key.get_pressed()
     
-    if keys[pygame.K_LEFT]:
-        player.rect.left -= 12
+        if keys[pygame.K_LEFT]:
+            player.rect.left -= 12
         
-    if keys[pygame.K_RIGHT]:
-        player.rect.left += 12
+        if keys[pygame.K_RIGHT]:
+            player.rect.left += 12
  
 
-    # Showing all sprites
-    sprites.clear(screen, clear_callback)   
-    all_sprites.clear(screen, clear_callback)
+        # Showing all sprites
+        sprites.clear(screen, clear_callback)   
+        all_sprites.clear(screen, clear_callback)
 
-    sprites.update()
-    all_sprites.update()
+        sprites.update()
+        all_sprites.update()
 
-    sprites.draw(screen)
-    all_sprites.draw(screen)
+        sprites.draw(screen)
+        all_sprites.draw(screen)
 
-    # Checking if the game is over
-    if ball.dead:
+        # Checking if the game is over
+        if ball.dead:
+            screen.fill(bg, textpos)
+            font = pygame.font.Font(None, 36)
+            text = font.render("You Are Dead", True, (100, 50, 255))
+            textpos = text.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2 ))
+            game_over = True
+            
+
+        elif not bool(sprites):
+            screen.fill(bg, textpos)
+            font = pygame.font.Font(None, 36)
+            text = font.render("You Win", True, (100, 50, 255))
+            textpos = text.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2 ))
+            game_over = True
+            
+        else:
+            text = font.render("score = " + str(score), True, (0, 0, 255))
+            textpos = text.get_rect(center=(70, screen_size[1] - 10))
+
+
+        # Showing the text
         screen.fill(bg, textpos)
-        font = pygame.font.Font(None, 36)
-        text = font.render("You Are Dead", True, (100, 50, 255))
-        textpos = text.get_rect(center=(screen_size[0] // 2, screen_size[1] // 2 ))
-        
-    else:
-        text = font.render("score = " + str(score), True, (0, 0, 255))
-        textpos = text.get_rect(center=(40, screen_size[1] - 10))
+        screen.blit(text, textpos)
 
-    # Showing the text
-    screen.fill(bg, textpos)
-    screen.blit(text, textpos)
-
-    # Updating the screen (new frame)
-    pygame.display.update()
+        # Updating the screen (new frame)
+        pygame.display.update()
